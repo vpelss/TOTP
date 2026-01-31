@@ -43,7 +43,7 @@ async function digestMessage(message) {
   return hashBuffer;
 }
 
-v2 = hashHex = new Uint8Array(v1);
+v2 = new Uint8Array(v1);
 pw = v2.toBase64();
 document.getElementById("v1").innerHTML = v1;
 document.getElementById("v2").innerHTML = v2;
@@ -66,28 +66,29 @@ async function hmac(keyString, messageInt, hash, blockSize) {
   //hash:       Function // The hash function to use (e.g. SHA-1)
   //blockSize:  Integer  // The block size of the hash function (e.g. 64 bytes for SHA-1)
 
-  let TE = new TextEncoder();
- let preKey = new TextEncoder().encode(keyString);
+  const TE = new TextEncoder();
+  //const TD = new TextDecoder("utf-8");
+  const TD = new TextDecoder();
+  let preKey = new TextEncoder().encode(keyString); //used to know the key length
+  empkeyString = TD.decode(preKey);
 
-  //const key = new TextEncoder().encode(keyString); // encode as (utf-8) Uint8Array
-
+  //messageInt to Uint8Array
   const message = TE.encode(messageInt.toString());
 
   // Compute the block sized key
-
   // Keys longer than blockSize are shortened by hashing them
-  //if (length(key) > blockSize) then
   if (preKey.length > blockSize) {
-    //key = hash(key);
-    //will be 20 bytes long?
-    key = await digestMessage(TE.encode(keyString));
+    key = new Uint8Array(blockSize); //set to block size
+    tempKey = await digestMessage(TE.encode(keyString));
+    //tempKey will be 20 bytes long : op of sha1
+    v2 = new Uint8Array(tempKey); //convert promise to Uint8Array
+    key.set(v2); //copy tempKey into blockSize key
   }
-
   // Keys shorter than blockSize are padded to blockSize by padding with zeros on the right
   if (preKey.length < blockSize) {
     //let key = new Uint8Array(blockSize);
     key = new Uint8Array(blockSize);
-   TE.encodeInto(keyString, key);
+    TE.encodeInto(keyString, key);
   }
 
   j = 9;
@@ -97,7 +98,12 @@ async function hmac(keyString, messageInt, hash, blockSize) {
 }
 
 let myTime = Date.now() * 1000; //in seconds
-hmac("a", myTime, "sha1", 64);
+hmac(
+  "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  myTime,
+  "sha1",
+  64
+);
   </script>
 
   
