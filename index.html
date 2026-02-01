@@ -156,22 +156,20 @@ async function hmac(
   j = 9;
 }
 
-let unixTime = Date.now() * 1000; //in seconds
-let steps = Math.floor(unixTime / 30).toString();
-//needs to be 16 bytes
-steps = 1;
+step = 1;
 do {
-  steps = "0" + steps;
-} while (steps.length < 16);
+  step = "0" + step;
+} while (step.length < 16);
 let seed;
 seed = document.getElementById("seed").value;
 let returnDigits = 8;
 let crypto = "sha1";
 
-hmac(seed, steps, returnDigits, crypto);
+hmac(seed, step, returnDigits, crypto);
 
 function eachSecond() {
-  let unixTime = Date.now() * 1000; //in seconds
+  let unixTime = Date.now() / 1000; //in seconds
+let stepInt = Math.floor(unixTime / 30);
   let step = Math.floor(unixTime / 30).toString();
   do {
     step = "0" + step;
