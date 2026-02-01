@@ -74,73 +74,67 @@ async function hmac(keyString, stepsString16Bytes, returnDigits, hash) {
   //blockSize:  Integer  // The block size of the hash function (e.g. 64 bytes for SHA-1)
 
   let blockSize = 64;
-  let k, msg, tempKey;
+  let k , msg , tempUint8Array , hashed;
   const TE = new TextEncoder();
   const TD = new TextDecoder();
 
   //all our keys should have hex characters
+  //msg = new Uint8Array(blockSize); //set to block size
+  //msg.set( Uint8Array.fromHex(stepsString16Bytes) );
   msg = Uint8Array.fromHex(stepsString16Bytes);
   k = Uint8Array.fromHex(keyString);
-
-  // GOOD TO HERE
 
   //hmac_sha inline
 
   // create our Uint8Array key to the blockSize sized
   // Keys longer than blockSize are shortened by hashing them
   if (k.length > blockSize) {
-    tempKey = new Uint8Array(blockSize); //set to block size
-    hash = await window.crypto.subtle.digest("SHA-1", k); // hash the message
-    tempKey.set(new Uint8Array(hash));
-    k = tempKey;
+    tempUint8Array = new Uint8Array(blockSize); //set to block size
+    hashed = await window.crypto.subtle.digest("SHA-1", k); // hash the message
+    tempUint8Array.set(new Uint8Array(hashed));
+    k = tempUint8Array;
   }
   // Keys shorter than blockSize are padded to blockSize by padding with zeros on the right
   if (k.length < blockSize) {
-    tempKey = new Uint8Array(blockSize); //set to block size
-    tempKey.set(k);
-    k = tempKey;
+    tempUint8Array = new Uint8Array(blockSize); //set to block size
+    tempUint8Array.set(k);
+    k = tempUint8Array;
   }
   // k should now be blockSize
 
-  let okey = new Uint8Array(k);
-okey.forEach(function(myByte,myIndex,myArray){ //key xor 0x5c
-  myArray[myIndex] =  myArray[myIndex] ^ 0x5c;
-}
-);
-  let ikey = new Uint8Array(k);
-  ikey.forEach(function(myByte,myIndex,myArray){ //key xor 0x5c
-  myArray[myIndex] =  myArray[myIndex] ^ 0x36;
-}
-);
   //o_key_pad ← block_sized_key xor [0x5c blockSize]   // Outer padded key
   //i_key_pad ← block_sized_key xor [0x36 blockSize]   // Inner padded key
+  let okey = new Uint8Array(k);
+  okey.forEach(function (myByte, myIndex, myArray) {
+    myArray[myIndex] = myArray[myIndex] ^ 0x5c;
+  }); //key xor 0x5c
+  let ikey = new Uint8Array(k);
+  ikey.forEach(function (myByte, myIndex, myArray) {
+    myArray[myIndex] = myArray[myIndex] ^ 0x36;
+  });     //key xor 0x36
+
+  // GOOD TO HERE
   
+  // hash(o_key_pad ∥ hash(i_key_pad ∥ message))
   
-  
-  tempKey = new Uint8Array(blockSize); //set to block size
-  hashed = await digestMessage(ikey); //hash(i_key_pad ∥ message)
-  tempKey.set(new Uint8Array(hashed)); //copy to blockSize version
-
-  let message = new Uint8Array(blockSize); //everything to blockSize
-  message.set(TE.encode(messageInt.toString())); //convert and copy in messageInt
-
-  //key should be blockSize long here
-
-
-
-  // i_key_pad ∥ message
-  ikey.forEach(function (myByte, myIndex, myAarray) {
-    myAarray[myIndex] = myAarray[myIndex] | message[myIndex];
+  // i_key_pad ∥ msg : msg will be shorter
+  //ikey.forEach(function (myByte, myIndex, myAarray) {
+  msg.forEach(function (myByte, myIndex, myAarray) {
+    ikey[myIndex] = ikey[myIndex] | myAarray[myIndex];
   });
-  tempKey = new Uint8Array(blockSize); //set to block size
-  let hashed = await digestMessage(ikey); //hash(i_key_pad ∥ message)
-  tempKey.set(new Uint8Array(hashed)); //copy to blockSize version
-
-  //o_key_pad ∥ hash(i_key_pad ∥ message)
-  okey.forEach(function (myByte, myIndex, myAarray) {
-    myAarray[myIndex] = myAarray[myIndex] | tempKey[myIndex];
+  
+  hashed = await window.crypto.subtle.digest("SHA-1", ikey); // hash(i_key_pad ∥ message)
+  tempUint8Array = new Uint8Array(hashed);
+  
+  //o_key_pad ∥ hash(i_key_pad ∥ message): tempUint8Array will be shoeter
+  tempUint8Array.forEach(function (myByte, myIndex, myAarray) {
+    okey[myIndex] = okey[myIndex] | myAarray[myIndex];
   });
+  
   hashed = await digestMessage(okey); // hash(o_key_pad ∥ hash(i_key_pad ∥ message))
+  tempUint8Array = new Uint8Array(hashed);
+  
+ 
 
   v3 = key.toBase64();
   //v3 = TD.decode(key);
