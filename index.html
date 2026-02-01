@@ -38,9 +38,9 @@
 <input type="text" placeholder="secret" value="3132333435363738393031323334353637383930" id="seed">
 
 <p></p>
-<div id="v1"></div>
-<div id="v2"></div>
-<div id="v3"></div>
+<div id="step"></div>
+<div id="key"></div>
+<div id="answer"></div>
   
     <script id="rendered-js" >
 const text = "a";
@@ -74,14 +74,19 @@ function concatenateUint8arrays(uint8arrays) {
 //rfc is atrocious. It assumes you know the inner workings of java crypto/mac. So it effectively leaves out all the important code if you need to write it in a different language.
 //crypto/mac does all the ipad and opad stuff
 // https://en.wikipedia.org/wiki/HMAC was much more useful
-async function hmac(keyString, stepsString16Bytes, returnDigits, hashFunction) {
+async function hmac(
+  keyString,
+  stepString16Bytes,
+  returnDigits,
+  hashFunctionString
+) {
   let blockSize = 64;
   let k, msg, tempUint8Array, hashed;
-  const TE = new TextEncoder();
-  const TD = new TextDecoder();
+  // const TE = new TextEncoder();
+  //const TD = new TextDecoder();
 
   //all our key strings should only have hex characters
-  msg = Uint8Array.fromHex(stepsString16Bytes);
+  msg = Uint8Array.fromHex(stepString16Bytes);
   k = Uint8Array.fromHex(keyString);
 
   //hmac_sha inline
@@ -122,28 +127,31 @@ async function hmac(keyString, stepsString16Bytes, returnDigits, hashFunction) {
   hashed = await window.crypto.subtle.digest("SHA-1", tempUint8Array);
   hashed = new Uint8Array(hashed); // hash(o_key_pad ∥ hash(i_key_pad ∥ message))
 
-  // GOOD TO HERE
-
   //https://datatracker.ietf.org/doc/html/rfc4226#section-5.3
   let offset = hashed[hashed.length - 1] & 0xf; //last 4 bits of hashed
+
+  //take 4 bytes at offset (minus the first bit) and use bits to create a decimal #
   let myBinary =
-    ((hashed[offset] & 0x7f) << 24) |
+    ((hashed[offset] & 0x7f) << 24) | // not signed
     (hashed[offset + 1] << 16) |
     (hashed[offset + 2] << 8) |
     hashed[offset + 3];
 
-  let dp = 10 ** returnDigits;
   // int otp = binary % DIGITS_POWER[codeDigits];
+  //take deciamal output and reduce to returnDigits decimal characters
+  // opt is the remander: so the decimal remander of myBinary / dp is .xxxx so a dp of 1000 will give us 4 digits
+  let dp = 10 ** returnDigits;
   let otp = myBinary % dp;
 
-  result = Integer.toString(otp);
-  while (result.length() < codeDigits) {
+  let result = otp.toString();
+  while (result.length < returnDigits) {
     result = "0" + result;
   }
 
-  document.getElementById("v1").innerHTML = keyString;
-  document.getElementById("v2").innerHTML = stepsString16Bytes;
-  document.getElementById("v3").innerHTML = offset;
+  document.getElementById("step").innerHTML = stepString16Bytes;
+  document.getElementById("key").innerHTML = keyString;
+  //document.getElementById("v2").innerHTML = stepString16Bytes;
+  document.getElementById("answer").innerHTML = result;
 
   j = 9;
 }
@@ -156,13 +164,26 @@ do {
   steps = "0" + steps;
 } while (steps.length < 16);
 let seed;
-//= new TextEncoder().encode("12345678901234567890");
-//seed = "3132333435363738393031323334353637383930";
 seed = document.getElementById("seed").value;
 let returnDigits = 8;
 let crypto = "sha1";
 
 hmac(seed, steps, returnDigits, crypto);
+
+function eachSecond() {
+  let unixTime = Date.now() * 1000; //in seconds
+  let step = Math.floor(unixTime / 30).toString();
+  do {
+    step = "0" + step;
+  } while (step.length < 16);
+// step needs to be 16 characters
+  let seed = document.getElementById("seed").value;
+  let returnDigits = 6;
+  let crypto = "sha1";
+  hmac(seed, step, returnDigits, crypto);
+}
+
+let myInterval = setInterval(eachSecond, 1000);
   </script>
 
   
