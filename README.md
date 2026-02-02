@@ -13,3 +13,11 @@ Wikipedia was much more helpful:
 Time-based one-time password: https://en.wikipedia.org/wiki/Time-based_one-time_password
 
 HMAC: https://en.wikipedia.org/wiki/HMAC
+
+Notes:
+
+- Your authentication secrets are in Base32 RFC 4648
+
+- https://en.wikipedia.org/wiki/Base32
+
+- https://datatracker.ietf.org/doc/html/rfc4648#section-6
