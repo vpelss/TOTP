@@ -12,7 +12,7 @@
     <link rel="canonical" href="https://codepen.io/vpelss/pen/EayojzL">
   
   
-  
+  <link rel='stylesheet' href='https://cdn.simplecss.org/simple.css'>
   
 
   
@@ -23,19 +23,24 @@
 <body>
   <a href="https://github.com/vpelss/JsTOTPAuthenticator" target="_blank">https://github.com/vpelss/JsTOTPAuthenticator</a>
 
-<p></p>
-<input type="text" placeholder="secret" value="3132333435363738393031323334353637383930" id="seed" onchange="eachSecond();">
+<label for="seed">Secret</label><input type="text" value="3132333435363738393031323334353637383930" id="seed" name="seed" placeholder="Secret in Base32" onchange="eachSecond();">
 
-<p></p>
-Step Hexed
-<div id="step"></div>
-Key Hexed
-<div id="key"></div>
-Code
-<div id="answer"></div>
-Countdown
-<div id="countdown"></div>
-
+<div>
+  <span>Step Hexed: </span>
+  <span id="step"></span>
+</div>
+<div>
+  <span>Key Hexed: </span>
+  <span id="key"></span>
+</div>
+<div>
+  <span>Code:</span>
+  <span id="answer"></span>
+</div>
+<div>
+  <span>Countdown: </span>
+  <span id="countdown"></span>
+</div>
 <div id="error"></div>
   
     <script id="rendered-js" >
