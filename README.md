@@ -1,5 +1,11 @@
 # JsTOTPAuthenticator
 
+Run at: 
+
+- https://vpelss.github.io/JsTOTPAuthenticator/ 
+
+- https://codepen.io/vpelss/pen/EayojzL
+
 I tried to follow the RFCs:
 
 TOTP: Time-Based One-Time Password Algorithm: https://datatracker.ietf.org/doc/html/rfc6238
