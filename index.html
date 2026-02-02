@@ -35,12 +35,13 @@
 
 <p></p>
 
-<input type="text" placeholder="secret" value="MYTESTQ" id="seed" onchange="eachSecond();">
+<input type="text" placeholder="secret" value="3132333435363738393031323334353637383930" id="seed" onchange="eachSecond();">
 
 <p></p>
 <div id="step"></div>
 <div id="key"></div>
 <div id="answer"></div>
+<div id="countdown"></div>
 <div id="error"></div>
   
     <script id="rendered-js" >
@@ -160,35 +161,26 @@ async function hmac(
   }
 }
 
-step = 1;
-do {
-  step = "0" + step;
-} while (step.length < 16);
-let seed;
-seed = document.getElementById("seed").value;
-let returnDigits = 8;
-let crypto = "sha1";
-
-//hmac(seed, step, returnDigits, crypto);
-
 function eachSecond() {
   let unixTime = Date.now() / 1000; //in seconds
-  let stepInt = Math.floor(unixTime / 30);
-  let step = Math.floor(unixTime / 30).toString();
+  let stepNow = unixTime / 30;
+  let stepInt = Math.floor(stepNow);
+  let timeLeft = Math.floor( 30 - (30 * ( stepNow  - stepInt )) );
+  //step MUST be in string HEX
+   let step = stepInt.toString(16);
+  document.getElementById("countdown").innerHTML = timeLeft;
   do {
     step = "0" + step;
   } while (step.length < 16);
   // step needs to be 16 characters
   let seedBase32 = document.getElementById("seed").value;
-  //base32 to uint8Array
+  //base32Str to HexStr
+  // https://mojoauth.com/binary-encoding-decoding/base32-with-javascript-in-browser#encoding-data-to-base32
+  seed = decodeBase32toHex(seedBase32);
   const TE = new TextEncoder();
   const TD = new TextDecoder();
 
-  // https://mojoauth.com/binary-encoding-decoding/base32-with-javascript-in-browser#encoding-data-to-base32
-  seed = decodeBase32toHex(seedBase32);
-  //seed = seedBase32;
-
-  //seed = uint8Array.toBase64();
+  
   let returnDigits = 6;
   let crypto = "sha1";
 
@@ -198,6 +190,22 @@ function eachSecond() {
     document.getElementById("error").innerHTML = error;
   }
 }
+
+//step MUST be in string HEX
+//toString(16).toUpperCase()
+step = Math.floor(1111111109/30).toString(16).toUpperCase();
+do {
+  step = "0" + step;
+} while (step.length < 16);
+
+let seed;
+seed = document.getElementById("seed").value;
+let returnDigits = 8;
+let crypto = "sha1";
+
+hmac(seed, step, returnDigits, crypto);
+
+document.getElementById("seed").value = "MYTESTQ";
 
 let myInterval = setInterval(eachSecond, 1000);
 
