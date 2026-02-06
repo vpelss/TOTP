@@ -126,7 +126,7 @@
 
 let localStorageName = "JsTOTPAuthenticator";
 let GlobalAssociativeArray = {};
-let allowedBase32Lengths = {"16":"16","24":"24","32":"32"};
+let allowedBase32Lengths = {"7":"7","16":"16","24":"24","32":"32"};
 
 const TE = new TextEncoder();
 let TD = new TextDecoder();
@@ -288,13 +288,13 @@ async function hmac(
       totp = "0" + totp;
     }
     document.getElementById("error").innerHTML = ""; //clear error on success
-  } catch (error) {
-    document.getElementById("error").innerHTML = document.getElementById("error").innerHTML + error;
-  } finally {
     document.getElementById("step").innerHTML = stepHexString16Bytes;
     document.getElementById("key").innerHTML = keyHexString;
     document.getElementById("totp").innerHTML = totp;
-  }
+  } catch (error) {
+    document.getElementById("error").innerHTML = document.getElementById("error").innerHTML + error;
+    document.getElementById("totp").innerHTML = ""; 
+  } 
 }
 
 function encodeBase32(data) {
@@ -400,6 +400,8 @@ async function eachSecond() {
 }
 catch(error){ 
   document.getElementById("error").innerHTML = error + "<br>";
+  document.getElementById("totp").innerHTML = ""; 
+  return;
 }
   
   //since base32 each character is 5 bits, we need 8 base32 characters to encode 5 byte characters
@@ -424,6 +426,7 @@ catch(error){
     hmac(seed, step, returnDigits, crypto);
   } catch (error) {
     document.getElementById("error").innerHTML = document.getElementById("error").innerHTML + error;
+    document.getElementById("totp").innerHTML = ""; 
   }
 }
 
