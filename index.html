@@ -126,6 +126,7 @@
 
 let localStorageName = "JsTOTPAuthenticator";
 let GlobalAssociativeArray = {};
+let allowedBase32Lengths = {"16":"16","24":"24","32":"32"};
 
 const TE = new TextEncoder();
 let TD = new TextDecoder();
@@ -288,12 +289,28 @@ async function hmac(
     }
     document.getElementById("error").innerHTML = ""; //clear error on success
   } catch (error) {
-    document.getElementById("error").innerHTML = error;
+    document.getElementById("error").innerHTML = document.getElementById("error").innerHTML + error;
   } finally {
     document.getElementById("step").innerHTML = stepHexString16Bytes;
     document.getElementById("key").innerHTML = keyHexString;
     document.getElementById("totp").innerHTML = totp;
   }
+}
+
+function encodeBase32(data) {
+  const BASE32_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+    let binaryString = "";
+    for (let i = 0; i < data.length; i++) {
+        binaryString += data.charCodeAt(i).toString(2).padStart(8, '0');
+    }
+    let padding = binaryString.length % 5;
+    if (padding !== 0) binaryString = binaryString.padEnd(binaryString.length + 5 - padding, '0');
+    let encoded = "";
+    for (let i = 0; i < binaryString.length; i += 5) {
+        encoded += BASE32_ALPHABET[parseInt(binaryString.slice(i, i + 5), 2)];
+    }
+    while (encoded.length % 8 !== 0) encoded += '=';
+    return encoded;
 }
 
 // https://medium.com/@at.kishor.k/demystifying-base32-an-in-depth-guide-to-this-encoding-standard-697b9426fc25
@@ -359,7 +376,83 @@ function stringToBytes(val) {
 }
 
 async function eachSecond() {
-  //unencrypt
+  let unixTime = Date.now() / 1000; //in seconds
+  let stepNow = unixTime / 30;
+  let stepInt = Math.floor(stepNow);
+  let timeLeft = Math.floor(30 - 30 * (stepNow - stepInt));
+  //step MUST be in string HEX
+  let step = stepInt.toString(16);
+  document.getElementById("countdown").innerHTML = timeLeft;
+  do {
+    step = "0" + step;
+  } while (step.length < 16);
+  // step needs to be 16 characters
+  let seedBase32 = document.getElementById("seed").value;
+  
+  try{
+  if(allowedBase32Lengths[seedBase32.length] != seedBase32.length){
+    let  myLength , values="";
+    for(myLength in allowedBase32Lengths) {
+      values = values + myLength + " ";
+    }
+    throw("Seed lengths must be " + values);
+  }
+}
+catch(error){ 
+  document.getElementById("error").innerHTML = error + "<br>";
+}
+  
+  //since base32 each character is 5 bits, we need 8 base32 characters to encode 5 byte characters
+  //so padding IS REQUIRED if base32 is not a multiple of 40 bits
+  seed = decodeBase32toHex(seedBase32.toUpperCase()); //base32Str to HexStr
+  //let jj = encodeBase32(seed);
+
+  //characters Aegis Authy Mine
+  // cc yes yes yes
+  // 3xC no yes no
+  // 4xC yes(modified) yes no
+  // 5xC yes yes yes
+  // 6xC no yes no
+  // 7xC yes(modified) yes yes
+  
+  // google 16, 24, 32 base32 char only. so 80, 120, 160 bits : 10, 15, 20 bytes
+ 
+  let returnDigits = 6;
+  let crypto = "sha1";
+
+  try {
+    hmac(seed, step, returnDigits, crypto);
+  } catch (error) {
+    document.getElementById("error").innerHTML = document.getElementById("error").innerHTML + error;
+  }
+}
+
+// MAIN //
+
+//first test
+//step MUST be in string HEX
+//toString(16).toUpperCase()
+step = Math.floor(1111111109 / 30)
+  .toString(16)
+  .toUpperCase();
+do {
+  step = "0" + step;
+} while (step.length < 16);
+
+let seed;
+seed = document.getElementById("seed").value;
+let returnDigits = 8;
+let crypto = "sha1";
+
+hmac(seed, step, returnDigits, crypto);
+
+document.getElementById("seed").value = "MYTESTQ";
+
+let myInterval = setInterval(eachSecond, 1000);
+
+LocalStorageToVar();
+
+//unencrypt
   // https://github.com/beemdevelopment/Aegis/blob/master/app/src/main/java/com/beemdevelopment/aegis/crypto/bc/SCrypt.java
   //https://github.com/tonyg/js-scrypt
   //https://github.com/ricmoo/scrypt-js?utm_source=cdnjs&utm_medium=cdnjs_link&utm_campaign=cdnjs_library#readme
@@ -407,56 +500,6 @@ async function eachSecond() {
 
     h = 9;
   }
-
-  let unixTime = Date.now() / 1000; //in seconds
-  let stepNow = unixTime / 30;
-  let stepInt = Math.floor(stepNow);
-  let timeLeft = Math.floor(30 - 30 * (stepNow - stepInt));
-  //step MUST be in string HEX
-  let step = stepInt.toString(16);
-  document.getElementById("countdown").innerHTML = timeLeft;
-  do {
-    step = "0" + step;
-  } while (step.length < 16);
-  // step needs to be 16 characters
-  let seedBase32 = document.getElementById("seed").value;
-  //since base32 each character is 5 bits, we need 8 base32 characters to encode 5 byte characters
-  //so padding if base32 is not a multiple of 40 bits
-  seed = decodeBase32toHex(seedBase32.toUpperCase()); //base32Str to HexStr
-
-  let returnDigits = 6;
-  let crypto = "sha1";
-
-  try {
-    hmac(seed, step, returnDigits, crypto);
-  } catch (error) {
-    document.getElementById("error").innerHTML = error;
-  }
-}
-
-// MAIN //
-
-//first test
-//step MUST be in string HEX
-//toString(16).toUpperCase()
-step = Math.floor(1111111109 / 30)
-  .toString(16)
-  .toUpperCase();
-do {
-  step = "0" + step;
-} while (step.length < 16);
-
-let seed;
-seed = document.getElementById("seed").value;
-let returnDigits = 8;
-let crypto = "sha1";
-
-hmac(seed, step, returnDigits, crypto);
-
-document.getElementById("seed").value = "MYTESTQ";
-let myInterval = setInterval(eachSecond, 1000);
-
-LocalStorageToVar();
   </script>
 
   
